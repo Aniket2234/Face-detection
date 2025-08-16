@@ -21,24 +21,37 @@ export default function Welcome() {
     // Get user data from sessionStorage (set during authentication)
     const userData = sessionStorage.getItem('welcomeUser');
     if (userData) {
-      setUser(JSON.parse(userData));
-      // Don't clear the data immediately to allow back navigation
+      try {
+        const parsedUser = JSON.parse(userData);
+        // Validate that we have required user data
+        if (parsedUser && parsedUser.id && parsedUser.name) {
+          setUser(parsedUser);
+        } else {
+          // Invalid user data, redirect to dashboard
+          sessionStorage.removeItem('welcomeUser');
+          setLocation('/dashboard');
+        }
+      } catch (error) {
+        // Corrupted data, redirect to dashboard
+        sessionStorage.removeItem('welcomeUser');
+        setLocation('/dashboard');
+      }
     } else {
-      // Create a default user for demonstration when navigating from dashboard
-      setUser({
-        id: 'demo-user',
-        name: 'Demo User',
-        profileImage: undefined,
-        lastLogin: new Date().toISOString()
-      });
+      // No authenticated user data, redirect to dashboard
+      setLocation('/dashboard');
     }
   }, [setLocation]);
 
   const handleContinue = () => {
+    // Clear the welcome user data and go to dashboard
+    sessionStorage.removeItem('welcomeUser');
     setLocation('/dashboard');
   };
 
-  // Always show the welcome page, no loading state needed
+  // Only show welcome page if we have valid user data
+  if (!user) {
+    return null; // This prevents flash before redirect
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-background to-blue-50 dark:from-green-950 dark:via-background dark:to-blue-950 flex items-center justify-center p-4 relative">

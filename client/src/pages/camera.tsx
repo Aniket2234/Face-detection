@@ -138,28 +138,34 @@ export default function Camera() {
       return response.json();
     },
     onSuccess: (data) => {
-      if (data.success && data.user) {
-        // Store user data for welcome page
+      if (data.success && data.user && data.user.id && data.user.name) {
+        // Only redirect to welcome if we have a legitimate successful recognition
         sessionStorage.setItem('welcomeUser', JSON.stringify({
           id: data.user.id,
           name: data.user.name,
           profileImage: data.user.profileImage,
           lastLogin: new Date().toISOString(),
-          confidence: Math.round(data.confidence * 100)
+          confidence: Math.round(data.confidence || 0)
         }));
         
-        // Redirect to welcome page instead of showing popup
+        // Redirect to welcome page for successful authentication
         setLocation('/welcome');
       } else {
+        // Clear any existing welcome user data
+        sessionStorage.removeItem('welcomeUser');
+        
         setAlertState({
           isOpen: true,
           type: "error",
           title: "Face Not Recognized",
-          message: "Please try again or register your face first."
+          message: `Recognition confidence: ${Math.round(data.confidence || 0)}%. Please try again or register your face first.`
         });
       }
     },
     onError: () => {
+      // Clear any existing welcome user data on error
+      sessionStorage.removeItem('welcomeUser');
+      
       setAlertState({
         isOpen: true,
         type: "error",
