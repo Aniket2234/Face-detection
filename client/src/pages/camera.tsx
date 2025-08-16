@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { useCamera } from '@/hooks/use-camera';
 import { useFaceDetection } from '@/hooks/use-face-detection';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AlertPopup } from '@/components/ui/alert-popup';
 
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,17 @@ export default function Camera() {
   const [name, setName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [autoCapture, setAutoCapture] = useState(true);
+  const [captureCountdown, setCaptureCountdown] = useState(0);
+  const [alertState, setAlertState] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({ isOpen: false, type: "info", title: "", message: "" });
+  
+  const autoCaptureTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const captureConditionsMetRef = useRef(false);
 
   const { 
     videoRef, 
@@ -46,21 +58,37 @@ export default function Camera() {
   const registerMutation = useMutation({
     mutationFn: async (userData: { name: string; faceDescriptor: number[]; profileImage: string }) => {
       const response = await apiRequest('POST', '/api/users', { ...userData, role: 'Employee' });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      toast({
-        title: "Registration Successful",
-        description: "Face has been registered successfully!",
+      setAlertState({
+        isOpen: true,
+        type: "success",
+        title: "Registration Successful! ✨",
+        message: `Welcome ${data.name}! Your face has been registered successfully.`
       });
-      setLocation('/dashboard');
+      setTimeout(() => setLocation('/dashboard'), 2000);
     },
     onError: (error: any) => {
-      toast({
-        title: "Registration Failed", 
-        description: error.message || "Failed to register face",
-        variant: "destructive",
+      const message = error.message || "Failed to register face";
+      let title = "Registration Failed";
+      
+      if (message.includes("already exists")) {
+        title = "Name Already Registered";
+      } else if (message.includes("already registered")) {
+        title = "Face Already Registered";
+      }
+      
+      setAlertState({
+        isOpen: true,
+        type: "error",
+        title,
+        message
       });
     },
   });
@@ -72,24 +100,28 @@ export default function Camera() {
     },
     onSuccess: (data) => {
       if (data.success && data.user) {
-        toast({
-          title: "Authentication Successful",
-          description: `Welcome back, ${data.user.name}! Confidence: ${data.confidence}%`,
+        setAlertState({
+          isOpen: true,
+          type: "success",
+          title: "Authentication Successful! 🎉",
+          message: `Welcome back, ${data.user.name}! Confidence: ${data.confidence}%`
         });
-        setTimeout(() => setLocation('/dashboard'), 1500);
+        setTimeout(() => setLocation('/dashboard'), 2000);
       } else {
-        toast({
-          title: "Authentication Failed",
-          description: "Face not recognized. Please try again.",
-          variant: "destructive",
+        setAlertState({
+          isOpen: true,
+          type: "error",
+          title: "Face Not Recognized",
+          message: "Please try again or register your face first."
         });
       }
     },
     onError: () => {
-      toast({
+      setAlertState({
+        isOpen: true,
+        type: "error",
         title: "Authentication Error",
-        description: "Failed to process face recognition",
-        variant: "destructive",
+        message: "Failed to process face recognition. Please try again."
       });
     },
   });
@@ -108,22 +140,109 @@ export default function Camera() {
     }
   }, [isStreaming, startDetection]);
 
+  // Auto-capture logic
+  useEffect(() => {
+    if (!autoCapture || isProcessing || registerMutation.isPending || recognizeMutation.isPending) {
+      return;
+    }
+
+    const canCapture = faceDetected && faceDescriptor && confidence > 0.8;
+    
+    if (mode === 'register') {
+      // For registration, also check if name is entered
+      if (canCapture && name.trim()) {
+        if (!captureConditionsMetRef.current) {
+          captureConditionsMetRef.current = true;
+          setCaptureCountdown(3);
+          
+          // Start 3-second countdown
+          let count = 3;
+          const countdownInterval = setInterval(() => {
+            count--;
+            setCaptureCountdown(count);
+            
+            if (count === 0) {
+              clearInterval(countdownInterval);
+              setCaptureCountdown(0);
+              
+              // Final check before capture
+              if (faceDetected && faceDescriptor && name.trim()) {
+                handleCapture();
+              }
+              captureConditionsMetRef.current = false;
+            }
+          }, 1000);
+          
+          autoCaptureTimerRef.current = countdownInterval;
+        }
+      } else {
+        captureConditionsMetRef.current = false;
+        if (autoCaptureTimerRef.current) {
+          clearInterval(autoCaptureTimerRef.current);
+          setCaptureCountdown(0);
+        }
+      }
+    } else {
+      // For authentication, no name required
+      if (canCapture && isBlinking) {
+        if (!captureConditionsMetRef.current) {
+          captureConditionsMetRef.current = true;
+          setCaptureCountdown(2);
+          
+          // Start 2-second countdown for authentication
+          let count = 2;
+          const countdownInterval = setInterval(() => {
+            count--;
+            setCaptureCountdown(count);
+            
+            if (count === 0) {
+              clearInterval(countdownInterval);
+              setCaptureCountdown(0);
+              
+              // Final check before capture
+              if (faceDetected && faceDescriptor) {
+                handleCapture();
+              }
+              captureConditionsMetRef.current = false;
+            }
+          }, 1000);
+          
+          autoCaptureTimerRef.current = countdownInterval;
+        }
+      } else {
+        captureConditionsMetRef.current = false;
+        if (autoCaptureTimerRef.current) {
+          clearInterval(autoCaptureTimerRef.current);
+          setCaptureCountdown(0);
+        }
+      }
+    }
+
+    return () => {
+      if (autoCaptureTimerRef.current) {
+        clearInterval(autoCaptureTimerRef.current);
+      }
+    };
+  }, [faceDetected, faceDescriptor, confidence, isBlinking, name, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending]);
+
   const handleCapture = async () => {
     if (!faceDetected || !faceDescriptor) {
-      toast({
+      setAlertState({
+        isOpen: true,
+        type: "warning",
         title: "No Face Detected",
-        description: "Please position your face in the detection area",
-        variant: "destructive",
+        message: "Please position your face in the detection area"
       });
       return;
     }
 
     if (mode === 'register') {
       if (!name.trim()) {
-        toast({
+        setAlertState({
+          isOpen: true,
+          type: "warning",
           title: "Name Required",
-          description: "Please enter your name to register",
-          variant: "destructive",
+          message: "Please enter your name to register"
         });
         return;
       }
@@ -133,10 +252,11 @@ export default function Camera() {
 
       const profileImage = captureImage();
       if (!profileImage) {
-        toast({
+        setAlertState({
+          isOpen: true,
+          type: "error",
           title: "Capture Failed",
-          description: "Failed to capture profile image",
-          variant: "destructive",
+          message: "Failed to capture profile image"
         });
         setIsProcessing(false);
         return;
@@ -234,33 +354,60 @@ export default function Camera() {
           
           {/* Face detection indicator */}
           <div className="absolute -top-4 sm:-top-8 left-1/2 transform -translate-x-1/2">
-            <div className={`px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium animate-face-scan ${
-              faceDetected ? 'bg-success text-white' : 'bg-yellow-500 text-white'
-            }`} data-testid="detection-status">
-              {faceDetected ? (
-                <>
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Face Detected</span>
-                  <span className="sm:hidden">Found</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Looking for face...</span>
-                  <span className="sm:hidden">Scanning...</span>
-                </>
-              )}
-            </div>
+            {captureCountdown > 0 ? (
+              <div className="px-4 py-2 rounded-full text-lg font-bold bg-primary text-white animate-pulse">
+                {captureCountdown}
+              </div>
+            ) : (
+              <div className={`px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium animate-face-scan ${
+                faceDetected ? 'bg-success text-white' : 'bg-yellow-500 text-white'
+              }`} data-testid="detection-status">
+                {faceDetected ? (
+                  <>
+                    <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Face Detected</span>
+                    <span className="sm:hidden">Found</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Looking for face...</span>
+                    <span className="sm:hidden">Scanning...</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Instructions */}
         <div className="text-center space-y-2 sm:space-y-4">
-          <h2 className="text-lg sm:text-2xl font-bold text-white" data-testid="instruction-title">
-            Position Your Face
-          </h2>
-          <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
-            Look directly at the camera and keep your face within the circle
-          </p>
+          {captureCountdown > 0 ? (
+            <div className="space-y-2">
+              <h2 className="text-lg sm:text-2xl font-bold text-white animate-pulse">
+                Auto Capturing in {captureCountdown}...
+              </h2>
+              <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4">
+                Hold still and keep looking at the camera
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold text-white" data-testid="instruction-title">
+                Position Your Face
+              </h2>
+              <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
+                {mode === 'register' 
+                  ? "Enter your name and position your face in the circle"
+                  : "Look directly at the camera and blink naturally"
+                }
+              </p>
+              {autoCapture && (
+                <p className="text-green-400 text-sm mt-2">
+                  ✨ Auto-capture enabled - No need to click!
+                </p>
+              )}
+            </div>
+          )}
           
           {/* Liveness Detection Instructions */}
           <Card className="bg-black/40 border-white/20 backdrop-blur-sm max-w-xs sm:max-w-sm mx-auto" data-testid="liveness-card">
@@ -321,16 +468,24 @@ export default function Camera() {
             <Image className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
           </Button>
           
-          {/* Capture Button */}
-          <Button
-            onClick={handleCapture}
-            disabled={!faceDetected || isProcessing || registerMutation.isPending || recognizeMutation.isPending}
-            className="w-16 h-16 sm:w-20 sm:h-20 bg-primary rounded-full shadow-lg shadow-primary/50 relative overflow-hidden group hover:bg-primary/90 disabled:opacity-50 touch-manipulation"
-            data-testid="button-capture"
-          >
-            <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-active:scale-100 transition-transform duration-150" />
-            <CameraIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white relative z-10" />
-          </Button>
+          {/* Capture Button - Now Manual Override */}
+          <div className="flex flex-col items-center space-y-2">
+            <Button
+              onClick={handleCapture}
+              disabled={!faceDetected || isProcessing || registerMutation.isPending || recognizeMutation.isPending}
+              className="w-16 h-16 sm:w-20 sm:h-20 bg-primary rounded-full shadow-lg shadow-primary/50 relative overflow-hidden group hover:bg-primary/90 disabled:opacity-50 touch-manipulation"
+              data-testid="button-capture"
+            >
+              <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-active:scale-100 transition-transform duration-150" />
+              <CameraIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white relative z-10" />
+            </Button>
+            <button
+              onClick={() => setAutoCapture(!autoCapture)}
+              className="text-white/60 text-xs hover:text-white transition-colors"
+            >
+              {autoCapture ? "Disable Auto" : "Enable Auto"}
+            </button>
+          </div>
           
           <Button
             variant="ghost"
@@ -375,6 +530,17 @@ export default function Camera() {
           </Card>
         </div>
       )}
+
+      {/* Alert Popup */}
+      <AlertPopup
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        autoClose={true}
+        duration={4000}
+      />
     </div>
   );
 }
