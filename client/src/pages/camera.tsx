@@ -19,7 +19,6 @@ export default function Camera() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('Employee');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -287,7 +286,7 @@ export default function Camera() {
       </div>
 
       {/* Registration Form Modal */}
-      {mode === 'register' && !showRegistrationForm && (
+      {mode === 'register' && (
         <div className="fixed bottom-0 left-0 right-0 z-20 p-6">
           <Card className="bg-black/60 border-white/20 backdrop-blur-sm" data-testid="registration-form">
             <CardContent className="p-6 space-y-4">

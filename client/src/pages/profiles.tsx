@@ -15,11 +15,11 @@ export default function Profiles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{totalScans: number; successRate: number; activeToday: number}>({
     queryKey: ['/api/stats'],
   });
 

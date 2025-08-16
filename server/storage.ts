@@ -44,7 +44,10 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
+      role: insertUser.role || "Employee",
+      profileImage: insertUser.profileImage || null,
+      isActive: insertUser.isActive ?? true,
       id,
       createdAt: new Date(),
       lastSeen: new Date(),
@@ -70,6 +73,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const log: RecognitionLog = {
       ...insertLog,
+      userId: insertLog.userId || null,
       id,
       timestamp: new Date(),
     };

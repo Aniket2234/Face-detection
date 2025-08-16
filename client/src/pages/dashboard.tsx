@@ -3,16 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Smile, Users, CheckCircle, ChevronRight } from 'lucide-react';
+import type { User } from '@shared/schema';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{totalScans: number; successRate: number; activeToday: number}>({
     queryKey: ['/api/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
 
