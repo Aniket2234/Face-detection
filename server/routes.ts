@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { getStorage } from "./storage";
 import { insertUserSchema, insertRecognitionLogSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -9,7 +9,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all users
   app.get("/api/users", async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await getStorage().getAllUsers();
       res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users" });
@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user by ID
   app.get("/api/users/:id", async (req, res) => {
     try {
-      const user = await storage.getUser(req.params.id);
+      const user = await getStorage().getUser(req.params.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -35,12 +35,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData = insertUserSchema.parse(req.body);
       
       // Check if user with same name already exists
-      const existingUser = await storage.getUserByName(userData.name);
+      const existingUser = await getStorage().getUserByName(userData.name);
       if (existingUser) {
         return res.status(400).json({ message: "User with this name already exists" });
       }
 
-      const user = await storage.createUser(userData);
+      const user = await getStorage().createUser(userData);
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/users/:id", async (req, res) => {
     try {
       const updates = req.body;
-      const user = await storage.updateUser(req.params.id, updates);
+      const user = await getStorage().updateUser(req.params.id, updates);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete user
   app.delete("/api/users/:id", async (req, res) => {
     try {
-      const success = await storage.deleteUser(req.params.id);
+      const success = await getStorage().deleteUser(req.params.id);
       if (!success) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid face descriptor required" });
       }
 
-      const users = await storage.getAllUsers();
+      const users = await getStorage().getAllUsers();
       let bestMatch = null;
       let bestDistance = Infinity;
       const threshold = 0.6; // Face recognition threshold
@@ -106,16 +106,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Log recognition attempt
       if (bestMatch) {
-        await storage.addRecognitionLog({
+        await getStorage().addRecognitionLog({
           userId: bestMatch.id,
           confidence,
           success,
         });
 
         // Update last seen
-        await storage.updateUser(bestMatch.id, { lastSeen: new Date() });
+        await getStorage().updateUser(bestMatch.id, { lastSeen: new Date() });
       } else {
-        await storage.addRecognitionLog({
+        await getStorage().addRecognitionLog({
           userId: null,
           confidence,
           success,
@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recognition statistics
   app.get("/api/stats", async (req, res) => {
     try {
-      const stats = await storage.getRecognitionStats();
+      const stats = await getStorage().getRecognitionStats();
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch statistics" });

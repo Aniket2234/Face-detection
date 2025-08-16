@@ -22,17 +22,17 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework for RESTful API endpoints
 - **Type System**: TypeScript throughout for compile-time safety
-- **Storage Layer**: Abstracted storage interface with in-memory implementation (designed for easy database integration)
+- **Storage Layer**: Abstracted storage interface with MongoDB implementation for persistent data storage
 - **API Design**: RESTful endpoints for user management (/api/users) and recognition logging
 - **Development Setup**: Vite development server with hot module replacement and error overlay
 
 ### Data Storage Solutions
-- **Database**: PostgreSQL configured through Drizzle ORM for type-safe database operations
+- **Database**: MongoDB with native driver for flexible document-based storage
 - **Schema Design**: 
-  - Users table with face descriptors (128D embeddings), profile images, roles, and activity tracking
-  - Recognition logs table for audit trails with confidence scores and timestamps
-- **Face Data**: 128-dimensional face descriptor arrays stored as JSONB for efficient similarity matching
-- **Session Management**: Connect-pg-simple for PostgreSQL-backed session storage
+  - Users collection with face descriptors (128D embeddings), profile images, roles, and activity tracking
+  - Recognition logs collection for audit trails with confidence scores and timestamps
+- **Face Data**: 128-dimensional face descriptor arrays stored as embedded arrays for efficient similarity matching
+- **Connection**: MongoDB Atlas cloud database with connection string authentication
 
 ### Authentication and Authorization Mechanisms
 - **Face Recognition**: Primary authentication method using face descriptor matching with confidence thresholds
@@ -49,8 +49,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Framework Dependencies
-- **@neondatabase/serverless**: Serverless PostgreSQL driver for database connectivity
-- **drizzle-orm** and **drizzle-kit**: Type-safe ORM and migration tools for database management
+- **mongodb**: Official MongoDB driver for database connectivity and operations
 - **express**: Web application framework for API server
 - **@tanstack/react-query**: Server state management and caching solution
 
