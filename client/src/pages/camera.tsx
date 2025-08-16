@@ -155,7 +155,7 @@ export default function Camera() {
         sessionStorage.removeItem('welcomeUser');
         
         const confidenceMessage = data.confidence ? 
-          `Recognition confidence: ${Math.round(data.confidence)}% (minimum required: 85%)` :
+          `Recognition confidence: ${Math.round(data.confidence)}% (minimum required: 75%)` :
           "No matching face found in database";
         
         setAlertState({

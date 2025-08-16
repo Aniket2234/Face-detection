@@ -126,11 +126,11 @@ export const handler: Handler = async (event, context) => {
           }
         }
 
-        // Check for duplicate face with very strict accuracy (same as recognition)
+        // Check for duplicate face with balanced accuracy
         if (userData.faceDescriptor && Array.isArray(userData.faceDescriptor)) {
           const allUsers = await usersCollection.find({}).toArray()
-          const euclideanThreshold = 0.35  // Same strict threshold as recognition
-          const similarityThreshold = 0.92  // Same strict threshold as recognition
+          const euclideanThreshold = 0.4  // Slightly stricter than recognition
+          const similarityThreshold = 0.88  // Slightly stricter than recognition
           
           for (const user of allUsers) {
             if (!user.faceDescriptor || !Array.isArray(user.faceDescriptor)) continue

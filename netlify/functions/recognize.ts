@@ -87,10 +87,10 @@ export const handler: Handler = async (event, context) => {
     let bestDistance = Infinity
     let bestSimilarity = -1
     
-    // VERY strict thresholds to prevent false positives
-    const euclideanThreshold = 0.35  // Much stricter threshold
-    const cosineSimilarityThreshold = 0.92  // Very high similarity requirement
-    const minimumConfidenceThreshold = 85  // Minimum confidence to accept match
+    // Balanced thresholds - secure but usable
+    const euclideanThreshold = 0.45  // More reasonable threshold
+    const cosineSimilarityThreshold = 0.85  // Good similarity requirement
+    const minimumConfidenceThreshold = 75  // Reasonable minimum confidence
 
     // Find best matching face using both distance and similarity
     for (const user of users) {
@@ -109,22 +109,33 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // Calculate confidence with stricter requirements
+    // Calculate confidence with balanced requirements
     let confidence = 0
     if (bestMatch && bestSimilarity > 0) {
-      // Weighted confidence calculation
+      // More forgiving confidence calculation
       const distanceScore = Math.max(0, (1 - (bestDistance / euclideanThreshold)) * 100)
       const similarityScore = (bestSimilarity * 100)
-      confidence = (distanceScore * 0.3 + similarityScore * 0.7)
+      confidence = (distanceScore * 0.4 + similarityScore * 0.6)
+      
+      // Log for debugging
+      console.log('Face recognition metrics:', {
+        distance: bestDistance,
+        similarity: bestSimilarity,
+        distanceScore,
+        similarityScore,
+        finalConfidence: confidence,
+        userName: bestMatch.name
+      })
       
       // Apply minimum confidence threshold
       if (confidence < minimumConfidenceThreshold) {
+        console.log(`Confidence ${confidence}% below threshold ${minimumConfidenceThreshold}%`)
         bestMatch = null
         confidence = 0
       }
     }
-    // Final validation - only succeed if we have a very confident match
-    const success = bestMatch !== null && confidence >= minimumConfidenceThreshold && bestSimilarity > cosineSimilarityThreshold
+    // Final validation - balanced approach
+    const success = bestMatch !== null && confidence >= minimumConfidenceThreshold
 
     // Log recognition attempt with request tracking
     const logEntry = {
