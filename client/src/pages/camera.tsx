@@ -139,13 +139,17 @@ export default function Camera() {
     },
     onSuccess: (data) => {
       if (data.success && data.user) {
-        setAlertState({
-          isOpen: true,
-          type: "success",
-          title: "Authentication Successful! 🎉",
-          message: `Welcome back, ${data.user.name}! Confidence: ${data.confidence}%`
-        });
-        setTimeout(() => setLocation('/dashboard'), 2000);
+        // Store user data for welcome page
+        sessionStorage.setItem('welcomeUser', JSON.stringify({
+          id: data.user.id,
+          name: data.user.name,
+          profileImage: data.user.profileImage,
+          lastLogin: new Date().toISOString(),
+          confidence: Math.round(data.confidence * 100)
+        }));
+        
+        // Redirect to welcome page instead of showing popup
+        setLocation('/welcome');
       } else {
         setAlertState({
           isOpen: true,

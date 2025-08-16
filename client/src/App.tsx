@@ -9,6 +9,7 @@ import Onboarding from "@/pages/onboarding";
 import Dashboard from "@/pages/dashboard";
 import Camera from "@/pages/camera";
 import Profiles from "@/pages/profiles";
+import Welcome from "@/pages/welcome";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/camera/:mode" component={Camera} />
       <Route path="/profiles" component={Profiles} />
+      <Route path="/welcome" component={Welcome} />
       <Route component={NotFound} />
     </Switch>
   );
