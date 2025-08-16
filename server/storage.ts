@@ -30,7 +30,7 @@ export class MongoStorage implements IStorage {
       maxPoolSize: 5,
       minPoolSize: 0,
     });
-    this.db = this.client.db("facedetection");
+    this.db = this.client.db("facesecure");
   }
 
   private async ensureConnection(): Promise<void> {
@@ -39,6 +39,7 @@ export class MongoStorage implements IStorage {
         await this.client.connect();
         this.isConnected = true;
         console.log("Connected to MongoDB successfully");
+        console.log("✅ Successfully connected to MongoDB with provided URI");
       } catch (error) {
         console.error("Failed to connect to MongoDB:", error);
         throw error;
