@@ -30,7 +30,7 @@ export class MongoStorage implements IStorage {
       maxPoolSize: 5,
       minPoolSize: 0,
     });
-    this.db = this.client.db("facesecure");
+    this.db = this.client.db("facedetection");
   }
 
   private async ensureConnection(): Promise<void> {

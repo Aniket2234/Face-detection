@@ -6,6 +6,74 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Debug endpoint to check MongoDB connection and collections
+  app.get("/api/debug/mongodb", async (req, res) => {
+    try {
+      const storage = getStorage();
+      const client = (storage as any).client;
+      const db = (storage as any).db;
+      
+      // Get list of all databases
+      const adminDb = client.db().admin();
+      const databasesList = await adminDb.listDatabases();
+      
+      // Check current database
+      const collections = await db.listCollections().toArray();
+      const collectionNames = collections.map((c: any) => c.name);
+      
+      // Count documents in each collection
+      const collectionCounts: Record<string, number> = {};
+      for (const name of collectionNames) {
+        collectionCounts[name] = await db.collection(name).countDocuments();
+      }
+      
+      // Sample some documents from non-empty collections
+      const samples: Record<string, any[]> = {};
+      for (const name of collectionNames) {
+        if (collectionCounts[name] > 0) {
+          samples[name] = await db.collection(name).find({}).limit(2).toArray();
+        }
+      }
+
+      // Check the facedetection database specifically
+      const alternativeChecks: Record<string, any> = {};
+      try {
+        const faceDetectionDb = client.db('facedetection');
+        const faceDetectionCollections = await faceDetectionDb.listCollections().toArray();
+        if (faceDetectionCollections.length > 0) {
+          alternativeChecks['facedetection'] = {
+            collections: faceDetectionCollections.map((c: any) => c.name),
+            counts: {},
+            samples: {}
+          };
+          
+          for (const collection of faceDetectionCollections) {
+            const count = await faceDetectionDb.collection(collection.name).countDocuments();
+            alternativeChecks['facedetection'].counts[collection.name] = count;
+            
+            if (count > 0) {
+              // Sample documents to see structure
+              alternativeChecks['facedetection'].samples[collection.name] = await faceDetectionDb.collection(collection.name).find({}).limit(2).toArray();
+            }
+          }
+        }
+      } catch (e: any) {
+        alternativeChecks['facedetection_error'] = e.message;
+      }
+      
+      res.json({
+        currentDatabase: "facedetection",
+        allDatabases: databasesList.databases,
+        collections: collectionNames,
+        counts: collectionCounts,
+        samples,
+        alternativeChecks
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Get all users
   app.get("/api/users", async (req, res) => {
     try {
