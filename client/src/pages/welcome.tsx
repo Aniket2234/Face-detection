@@ -24,8 +24,13 @@ export default function Welcome() {
       setUser(JSON.parse(userData));
       // Don't clear the data immediately to allow back navigation
     } else {
-      // If no user data, redirect to dashboard
-      setTimeout(() => setLocation('/dashboard'), 1000);
+      // Create a default user for demonstration when navigating from dashboard
+      setUser({
+        id: 'demo-user',
+        name: 'Demo User',
+        profileImage: null,
+        lastLogin: new Date().toISOString()
+      });
     }
   }, [setLocation]);
 
@@ -33,18 +38,7 @@ export default function Welcome() {
     setLocation('/dashboard');
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-secondary/20 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Always show the welcome page, no loading state needed
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-background to-blue-50 dark:from-green-950 dark:via-background dark:to-blue-950 flex items-center justify-center p-4 relative">
@@ -77,7 +71,7 @@ export default function Welcome() {
             <div className="space-y-2">
               <div className="flex items-center justify-center space-x-2 text-lg">
                 <User className="w-5 h-5 text-primary" />
-                <span className="font-medium text-foreground">{user.name}</span>
+                <span className="font-medium text-foreground">{user?.name || 'Demo User'}</span>
               </div>
               <p className="text-muted-foreground">
                 Face recognition successful
@@ -86,12 +80,12 @@ export default function Welcome() {
           </div>
 
           {/* User Profile Image */}
-          {user.profileImage && (
+          {user?.profileImage && (
             <div className="mb-6">
               <div className="w-16 h-16 rounded-full overflow-hidden mx-auto border-4 border-green-200 dark:border-green-800">
                 <img 
                   src={user.profileImage} 
-                  alt={user.name}
+                  alt={user.name || 'User'}
                   className="w-full h-full object-cover"
                 />
               </div>
