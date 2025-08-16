@@ -1,0 +1,93 @@
+11:51:22 PM: build-image version: e5074bde24e53715f94c72a3902b7868fbfe84e1 (noble)
+11:51:22 PM: buildbot version: e2595138a7c5ab9f292ccfa2932733582fe0dc65
+11:51:22 PM: Fetching cached dependencies
+11:51:22 PM: Failed to fetch cache, continuing with build
+11:51:22 PM: Starting to prepare the repo for build
+11:51:22 PM: No cached dependencies found. Cloning fresh repo
+11:51:22 PM: git clone --filter=blob:none https://github.com/Aniket2234/Face-detection
+11:51:22 PM: Preparing Git Reference refs/heads/main
+11:51:24 PM: Starting to install dependencies
+11:51:25 PM: v22.18.0 is already installed.
+11:51:25 PM: Now using node v22.18.0 (npm v10.9.3)
+11:51:25 PM: Enabling Node.js Corepack
+11:51:25 PM: Started restoring cached build plugins
+11:51:25 PM: Finished restoring cached build plugins
+11:51:25 PM: Started restoring cached corepack dependencies
+11:51:25 PM: Finished restoring cached corepack dependencies
+11:51:25 PM: No npm workspaces detected
+11:51:25 PM: Started restoring cached node modules
+11:51:25 PM: Finished restoring cached node modules
+11:51:25 PM: Installing npm packages using npm version 10.9.3
+11:51:29 PM: npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+11:51:29 PM: npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+11:51:33 PM: added 785 packages in 8s
+11:51:33 PM: npm packages installed
+11:51:34 PM: Successfully installed dependencies
+11:51:34 PM: Starting build script
+11:51:35 PM: Detected 1 framework(s)
+11:51:35 PM: "vite" at version "5.4.19"
+11:51:35 PM: Section completed: initializing
+11:51:36 PM: ​
+11:51:36 PM: Netlify Build                                                 
+11:51:36 PM: ────────────────────────────────────────────────────────────────
+11:51:36 PM: ​
+11:51:36 PM: ❯ Version
+11:51:36 PM:   @netlify/build 35.1.0
+11:51:36 PM: ​
+11:51:36 PM: ❯ Flags
+11:51:36 PM:   accountId: 689594c20d87155ab17af86b
+11:51:36 PM:   baseRelDir: true
+11:51:36 PM:   buildId: 68a0cc212f566428218723de
+11:51:36 PM:   deployId: 68a0cc212f566428218723e0
+11:51:36 PM: ​
+11:51:36 PM: ❯ Current directory
+11:51:36 PM:   /opt/build/repo
+11:51:36 PM: ​
+11:51:36 PM: ❯ Config file
+11:51:36 PM:   /opt/build/repo/netlify.toml
+11:51:36 PM: ​
+11:51:36 PM: ❯ Context
+11:51:36 PM:   production
+11:51:36 PM: ​
+11:51:36 PM: build.command from netlify.toml                               
+11:51:36 PM: ────────────────────────────────────────────────────────────────
+11:51:36 PM: ​
+11:51:36 PM: $ npm run build:netlify
+11:51:36 PM: npm error Missing script: "build:netlify"
+11:51:36 PM: npm error
+11:51:36 PM: npm error To see a list of scripts, run:
+11:51:36 PM: npm error   npm run
+11:51:36 PM: npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2025-08-16T18_21_36_489Z-debug-0.log
+11:51:36 PM: ​
+11:51:36 PM: "build.command" failed                                        
+11:51:36 PM: ────────────────────────────────────────────────────────────────
+11:51:36 PM: ​
+11:51:36 PM:   Error message
+11:51:36 PM:   Command failed with exit code 1: npm run build:netlify (https://ntl.fyi/exit-code-1)
+11:51:36 PM: ​
+11:51:36 PM:   Error location
+11:51:36 PM:   In build.command from netlify.toml:
+11:51:36 PM:   npm run build:netlify
+11:51:36 PM: ​
+11:51:36 PM:   Resolved config
+11:51:36 PM:   build:
+11:51:36 PM:     base: /opt/build/repo
+11:51:36 PM:     command: npm run build:netlify
+11:51:36 PM:     commandOrigin: config
+11:51:36 PM:     environment:
+11:51:36 PM:       - MONGODB_URI
+11:51:36 PM:     publish: /opt/build/repo/dist/public
+11:51:36 PM:     publishOrigin: config
+11:51:36 PM:   functions:
+11:51:36 PM:     "*":
+11:51:36 PM:       node_bundler: esbuild
+11:51:36 PM:   functionsDirectory: /opt/build/repo/netlify/functions
+11:51:36 PM:   redirects:
+11:51:36 PM:     - from: /api/*
+      status: 200
+      to: /.netlify/functions/:splat
+  redirectsOrigin: config
+11:51:36 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+11:51:36 PM: Failing build: Failed to build site
+11:51:37 PM: Finished processing build request in 14.958s
+11:51:36 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
