@@ -33,23 +33,13 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 relative">
       {/* Back Button */}
       <Button
-        onClick={() => {
-          // Store dummy user data for demonstration since we're navigating back
-          sessionStorage.setItem('welcomeUser', JSON.stringify({
-            id: 'demo-user',
-            name: 'Welcome User',
-            profileImage: null,
-            lastLogin: new Date().toISOString(),
-            confidence: 95
-          }));
-          setLocation('/welcome');
-        }}
+        onClick={() => setLocation('/onboarding')}
         variant="ghost"
         size="sm"
         className="absolute top-4 left-4 text-muted-foreground hover:text-foreground z-10"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Welcome
+        Back to Main
       </Button>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
