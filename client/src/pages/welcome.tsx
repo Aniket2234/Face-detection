@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, User, Calendar, Clock } from 'lucide-react';
+import { CheckCircle, User, Calendar, Clock, ArrowLeft } from 'lucide-react';
 
 interface WelcomeProps {
   user?: {
@@ -48,7 +48,18 @@ export default function Welcome() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-background to-blue-50 dark:from-green-950 dark:via-background dark:to-blue-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-background to-blue-50 dark:from-green-950 dark:via-background dark:to-blue-950 flex items-center justify-center p-4 relative">
+      {/* Back Button */}
+      <Button
+        onClick={() => setLocation('/dashboard')}
+        variant="ghost"
+        size="sm"
+        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Dashboard
+      </Button>
+      
       <Card className="w-full max-w-md shadow-lg border-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
         <CardContent className="p-8 text-center">
           {/* Success Icon */}
