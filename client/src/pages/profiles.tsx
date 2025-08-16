@@ -46,8 +46,7 @@ export default function Profiles() {
   });
 
   const filteredUsers = users.filter((user: User) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+    user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleAddProfile = () => {
@@ -78,55 +77,55 @@ export default function Profiles() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-6">
-      <div className="max-w-lg mx-auto px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-4 sm:py-6 safe-area-inset-top safe-area-inset-bottom">
+      <div className="max-w-sm sm:max-w-lg mx-auto px-4 sm:px-6">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900" data-testid="profiles-title">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900" data-testid="profiles-title">
               Registered Profiles
             </h1>
-            <p className="text-slate-600" data-testid="profiles-subtitle">
+            <p className="text-sm sm:text-base text-slate-600" data-testid="profiles-subtitle">
               Manage face recognition profiles
             </p>
           </div>
           <Button
             onClick={handleAddProfile}
-            className="w-12 h-12 bg-primary rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90"
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-lg sm:rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 touch-manipulation flex-shrink-0"
             data-testid="button-add-profile"
           >
-            <Plus className="w-5 h-5 text-white" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </Button>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center">
-            <Search className="w-5 h-5 text-slate-400" />
+        <div className="relative mb-4 sm:mb-6">
+          <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
           </div>
           <Input
             type="text"
             placeholder="Search profiles..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200"
+            className="pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200 text-sm sm:text-base"
             data-testid="input-search"
           />
         </div>
 
         {/* Profile List */}
-        <div className="space-y-4" data-testid="profiles-list">
+        <div className="space-y-3 sm:space-y-4" data-testid="profiles-list">
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="animate-pulse">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-slate-200 rounded-full"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-200 rounded-full flex-shrink-0"></div>
+                      <div className="flex-1 space-y-2 min-w-0">
+                        <div className="h-3 sm:h-4 bg-slate-200 rounded w-3/4"></div>
+                        <div className="h-2 sm:h-3 bg-slate-200 rounded w-1/2"></div>
                       </div>
                     </div>
                   </CardContent>
@@ -135,12 +134,12 @@ export default function Profiles() {
             </div>
           ) : filteredUsers.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <div className="text-slate-400 mb-2">
+              <CardContent className="p-6 sm:p-8 text-center">
+                <div className="text-slate-400 mb-2 text-sm sm:text-base">
                   {searchQuery ? 'No profiles found matching your search' : 'No profiles registered yet'}
                 </div>
                 {!searchQuery && (
-                  <Button onClick={handleAddProfile} className="mt-4" data-testid="button-add-first-profile">
+                  <Button onClick={handleAddProfile} className="mt-4 touch-manipulation" data-testid="button-add-first-profile">
                     <Plus className="w-4 h-4 mr-2" />
                     Add First Profile
                   </Button>
@@ -154,64 +153,61 @@ export default function Profiles() {
                 className="hover:shadow-md transition-all duration-200"
                 data-testid={`profile-card-${user.id}`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-4">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
                     {/* Profile Avatar */}
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       {user.profileImage ? (
                         <img
                           src={user.profileImage}
                           alt={`${user.name} profile`}
-                          className="w-16 h-16 rounded-full object-cover border-2 border-slate-200"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-200"
                           data-testid={`img-avatar-${user.id}`}
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-slate-200 border-2 border-slate-200 flex items-center justify-center">
-                          <span className="text-slate-600 font-semibold text-lg">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-200 border-2 border-slate-200 flex items-center justify-center">
+                          <span className="text-slate-600 font-semibold text-sm sm:text-lg">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       )}
                       
                       {user.isActive && (
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-success rounded-full border-2 border-white flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-white" />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-success rounded-full border-2 border-white flex items-center justify-center">
+                          <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                         </div>
                       )}
                     </div>
                     
                     {/* Profile Info */}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-900" data-testid={`text-name-${user.id}`}>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate" data-testid={`text-name-${user.id}`}>
                         {user.name}
                       </h3>
-                      <p className="text-sm text-slate-600" data-testid={`text-role-${user.id}`}>
-                        {user.role}
-                      </p>
-                      <p className="text-xs text-slate-500" data-testid={`text-last-seen-${user.id}`}>
+                      <p className="text-xs sm:text-sm text-slate-500" data-testid={`text-last-seen-${user.id}`}>
                         Last seen: {formatLastSeen(user.lastSeen)}
                       </p>
                     </div>
                     
                     {/* Actions */}
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-10 h-10 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors duration-200"
+                        className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-lg sm:rounded-xl hover:bg-slate-200 transition-colors duration-200 touch-manipulation"
                         data-testid={`button-edit-${user.id}`}
                       >
-                        <Edit className="w-4 h-4 text-slate-600" />
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4 text-slate-600" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteUser(user.id, user.name)}
                         disabled={deleteUserMutation.isPending}
-                        className="w-10 h-10 bg-error/10 rounded-xl hover:bg-error/20 transition-colors duration-200"
+                        className="w-8 h-8 sm:w-10 sm:h-10 bg-error/10 rounded-lg sm:rounded-xl hover:bg-error/20 transition-colors duration-200 touch-manipulation"
                         data-testid={`button-delete-${user.id}`}
                       >
-                        <Trash2 className="w-4 h-4 text-error" />
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-error" />
                       </Button>
                     </div>
                   </div>
@@ -222,25 +218,25 @@ export default function Profiles() {
         </div>
 
         {/* Analytics Card */}
-        <Card className="mt-8" data-testid="analytics-card">
-          <CardContent className="p-6">
-            <h3 className="font-semibold text-slate-900 mb-4">Profile Statistics</h3>
-            <div className="grid grid-cols-2 gap-4">
+        <Card className="mt-6 sm:mt-8" data-testid="analytics-card">
+          <CardContent className="p-4 sm:p-6">
+            <h3 className="font-semibold text-slate-900 mb-3 sm:mb-4 text-sm sm:text-base">Profile Statistics</h3>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary" data-testid="text-total-profiles">
+                <div className="text-xl sm:text-2xl font-bold text-primary" data-testid="text-total-profiles">
                   {users.length}
                 </div>
-                <div className="text-sm text-slate-600">Total Profiles</div>
+                <div className="text-xs sm:text-sm text-slate-600">Total Profiles</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-success" data-testid="text-active-today">
+                <div className="text-xl sm:text-2xl font-bold text-success" data-testid="text-active-today">
                   {stats?.activeToday || 0}
                 </div>
-                <div className="text-sm text-slate-600">Active Today</div>
+                <div className="text-xs sm:text-sm text-slate-600">Active Today</div>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <div className="flex justify-between text-sm">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-slate-600">Recognition Accuracy</span>
                 <span className="font-semibold text-success" data-testid="text-accuracy">
                   {stats?.successRate || 0}%
@@ -251,13 +247,13 @@ export default function Profiles() {
         </Card>
 
         {/* Add Profile Button */}
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <Button
             onClick={handleAddProfile}
-            className="w-full bg-primary text-white py-4 rounded-2xl font-semibold text-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all duration-200 transform hover:scale-[1.02] h-auto"
+            className="w-full bg-primary text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-base sm:text-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all duration-200 transform hover:scale-[1.02] h-auto touch-manipulation"
             data-testid="button-add-new-profile"
           >
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Add New Profile
           </Button>
         </div>

@@ -79,7 +79,7 @@ export function FaceDetector({
       ref={canvasRef}
       width={400}
       height={400}
-      className={cn('absolute inset-0 pointer-events-none', className)}
+      className={cn('absolute inset-0 pointer-events-none w-full h-full object-contain', className)}
     />
   );
 }
