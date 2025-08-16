@@ -22,8 +22,7 @@ export default function Welcome() {
     const userData = sessionStorage.getItem('welcomeUser');
     if (userData) {
       setUser(JSON.parse(userData));
-      // Clear the data after use
-      sessionStorage.removeItem('welcomeUser');
+      // Don't clear the data immediately to allow back navigation
     } else {
       // If no user data, redirect to dashboard
       setTimeout(() => setLocation('/dashboard'), 1000);
@@ -122,7 +121,7 @@ export default function Welcome() {
 
           {/* Auto-redirect info */}
           <p className="text-xs text-muted-foreground mt-4">
-            You'll be automatically redirected in a few seconds
+            Click "Continue to Dashboard" to proceed or use the back button to return
           </p>
         </CardContent>
       </Card>
