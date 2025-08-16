@@ -126,11 +126,11 @@ export const handler: Handler = async (event, context) => {
           }
         }
 
-        // Check for duplicate face with improved accuracy
+        // Check for duplicate face with very strict accuracy (same as recognition)
         if (userData.faceDescriptor && Array.isArray(userData.faceDescriptor)) {
           const allUsers = await usersCollection.find({}).toArray()
-          const euclideanThreshold = 0.4  // Stricter threshold for registration
-          const similarityThreshold = 0.85  // High similarity threshold
+          const euclideanThreshold = 0.35  // Same strict threshold as recognition
+          const similarityThreshold = 0.92  // Same strict threshold as recognition
           
           for (const user of allUsers) {
             if (!user.faceDescriptor || !Array.isArray(user.faceDescriptor)) continue
@@ -138,7 +138,7 @@ export const handler: Handler = async (event, context) => {
             const distance = calculateEuclideanDistance(userData.faceDescriptor, user.faceDescriptor)
             const similarity = calculateCosineSimilarity(userData.faceDescriptor, user.faceDescriptor)
             
-            // Use both metrics for duplicate detection
+            // Use same strict thresholds as recognition to prevent false matches
             if (distance < euclideanThreshold && similarity > similarityThreshold) {
               return {
                 statusCode: 400,
@@ -146,7 +146,8 @@ export const handler: Handler = async (event, context) => {
                 body: JSON.stringify({
                   message: "This face is already registered in the system",
                   existingUser: user.name,
-                  similarity: Number((similarity * 100).toFixed(1))
+                  similarity: Number((similarity * 100).toFixed(1)),
+                  confidence: Number(((1 - distance / euclideanThreshold) * 30 + similarity * 70).toFixed(1))
                 })
               }
             }

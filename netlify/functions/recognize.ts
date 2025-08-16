@@ -87,9 +87,10 @@ export const handler: Handler = async (event, context) => {
     let bestDistance = Infinity
     let bestSimilarity = -1
     
-    // More strict thresholds for better accuracy
-    const euclideanThreshold = 0.5  // Lower threshold for stricter matching
-    const cosineSimilarityThreshold = 0.8  // High similarity threshold
+    // VERY strict thresholds to prevent false positives
+    const euclideanThreshold = 0.35  // Much stricter threshold
+    const cosineSimilarityThreshold = 0.92  // Very high similarity requirement
+    const minimumConfidenceThreshold = 85  // Minimum confidence to accept match
 
     // Find best matching face using both distance and similarity
     for (const user of users) {
@@ -98,7 +99,7 @@ export const handler: Handler = async (event, context) => {
       const distance = calculateEuclideanDistance(faceDescriptor, user.faceDescriptor)
       const similarity = calculateCosineSimilarity(faceDescriptor, user.faceDescriptor)
       
-      // Use both metrics for better accuracy
+      // BOTH metrics must pass strict thresholds
       if (distance < euclideanThreshold && similarity > cosineSimilarityThreshold) {
         if (distance < bestDistance) {
           bestDistance = distance
@@ -108,10 +109,22 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // More conservative confidence calculation
-    const confidence = bestMatch ? 
-      Math.min(95, Math.max(0, (bestSimilarity * 100 + (1 - bestDistance) * 50) / 1.5)) : 0
-    const success = bestMatch !== null
+    // Calculate confidence with stricter requirements
+    let confidence = 0
+    if (bestMatch && bestSimilarity > 0) {
+      // Weighted confidence calculation
+      const distanceScore = Math.max(0, (1 - (bestDistance / euclideanThreshold)) * 100)
+      const similarityScore = (bestSimilarity * 100)
+      confidence = (distanceScore * 0.3 + similarityScore * 0.7)
+      
+      // Apply minimum confidence threshold
+      if (confidence < minimumConfidenceThreshold) {
+        bestMatch = null
+        confidence = 0
+      }
+    }
+    // Final validation - only succeed if we have a very confident match
+    const success = bestMatch !== null && confidence >= minimumConfidenceThreshold && bestSimilarity > cosineSimilarityThreshold
 
     // Log recognition attempt with request tracking
     const logEntry = {

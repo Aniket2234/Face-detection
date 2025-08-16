@@ -154,11 +154,23 @@ export default function Camera() {
         // Clear any existing welcome user data
         sessionStorage.removeItem('welcomeUser');
         
+        const confidenceMessage = data.confidence ? 
+          `Recognition confidence: ${Math.round(data.confidence)}% (minimum required: 85%)` :
+          "No matching face found in database";
+        
         setAlertState({
           isOpen: true,
           type: "error",
           title: "Face Not Recognized",
-          message: `Recognition confidence: ${Math.round(data.confidence || 0)}%. Please try again or register your face first.`
+          message: `${confidenceMessage}. Please try again or register your face first.`
+        });
+        
+        // Debug log for development
+        console.log('Authentication failed:', {
+          success: data.success,
+          confidence: data.confidence,
+          user: data.user ? 'Found but insufficient confidence' : 'No match found',
+          requestId: data.requestId
         });
       }
     },
