@@ -15,19 +15,29 @@ export async function apiRequest(
   // Add request ID for better tracking
   const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
   
-  const res = await fetch(url, {
-    method,
-    headers: {
-      ...(data ? { "Content-Type": "application/json" } : {}),
-      'X-Request-ID': requestId,
-      'Cache-Control': 'no-cache'
-    },
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for slow servers
+  
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        ...(data ? { "Content-Type": "application/json" } : {}),
+        'X-Request-ID': requestId,
+        'Cache-Control': 'no-cache'
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: controller.signal,
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    clearTimeout(timeoutId);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -58,15 +68,17 @@ export const queryClient = new QueryClient({
       retry: (failureCount, error: any) => {
         // Retry only for network errors, not for 4xx errors
         if (error?.message?.includes('4')) return false;
-        return failureCount < 2;
+        return failureCount < 3; // More retries for server processing
       },
     },
     mutations: {
       retry: (failureCount, error: any) => {
         // Retry mutations for network errors only
         if (error?.message?.includes('4')) return false;
-        return failureCount < 1;
+        return failureCount < 2; // More retries for slow server
       },
+      // Add timeout for slow server processing
+      networkMode: 'always',
     },
   },
 });

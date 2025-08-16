@@ -69,9 +69,9 @@ export function useFaceDetection(): FaceDetectionHook {
     if (!videoRef.current) return;
 
     try {
-      // Throttle detection to avoid overwhelming the system
+      // Throttle detection to avoid overwhelming the system (slower for server processing)
       const now = Date.now();
-      if (now - lastDetectionTime.current < 200) return; // Minimum 200ms between detections
+      if (now - lastDetectionTime.current < 500) return; // Increased to 500ms between detections
       lastDetectionTime.current = now;
       
       const detection = await detectFace(videoRef.current);
@@ -80,7 +80,7 @@ export function useFaceDetection(): FaceDetectionHook {
         // Require multiple stable detections for better accuracy
         stableFaceCount.current += 1;
         
-        if (stableFaceCount.current >= 3) { // Need 3 stable detections
+        if (stableFaceCount.current >= 5) { // Need 5 stable detections for better accuracy
           setFaceDetected(true);
           setConfidence(detection.detection.score);
           setFaceDescriptor(getFaceDescriptor(detection));
@@ -112,8 +112,8 @@ export function useFaceDetection(): FaceDetectionHook {
     setIsDetecting(true);
     setError(null);
     
-    // Start detection loop with improved timing
-    detectionIntervalRef.current = setInterval(runDetection, 150); // Slightly slower for stability
+    // Start detection loop with slower timing for server processing
+    detectionIntervalRef.current = setInterval(runDetection, 400); // Much slower for server stability
   }, [isDetecting, runDetection]);
 
   const stopDetection = useCallback(() => {

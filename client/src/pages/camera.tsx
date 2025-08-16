@@ -207,7 +207,7 @@ export default function Camera() {
       return;
     }
 
-    const canCapture = faceDetected && faceDescriptor && confidence > 0.7;
+    const canCapture = faceDetected && faceDescriptor && confidence > 0.8; // Higher confidence threshold
     
     if (mode === 'register') {
       // For registration, capture immediately when face is detected (no name required yet)
@@ -216,7 +216,7 @@ export default function Camera() {
         setTimeout(() => {
           handleCapture();
           captureConditionsMetRef.current = false;
-        }, 800); // Small delay to ensure stable detection
+        }, 1500); // Longer delay for server processing
       }
     } else {
       // For authentication, capture immediately when face is detected
@@ -225,7 +225,7 @@ export default function Camera() {
         setTimeout(() => {
           handleCapture();
           captureConditionsMetRef.current = false;
-        }, 500); // Shorter delay for authentication
+        }, 1200); // Longer delay for authentication processing
       }
     }
   }, [faceDetected, faceDescriptor, confidence, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending, showNameInput, capturedFaceData]);
@@ -418,10 +418,10 @@ export default function Camera() {
               {isProcessing ? "Processing..." : "Position Your Face"}
             </h2>
             <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
-              {isProcessing ? "Please wait while we process your face" : 
+              {(isProcessing || recognizeMutation.isPending) ? "Processing face recognition... This may take 10-15 seconds" : 
                mode === 'register' 
                 ? "Look at the camera to capture your face" 
-                : "Look directly at the camera"
+                : "Look directly at the camera for authentication"
               }
             </p>
             {autoCapture && !isProcessing && mode === 'register' && !showNameInput && (
@@ -430,7 +430,7 @@ export default function Camera() {
                   ✨ Auto-capture enabled
                 </p>
                 <p className="text-white/60 text-xs">
-                  {faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
+                  {faceDetected ? "Face detected - processing in a few seconds..." : "Looking for face..."}
                 </p>
               </div>
             )}
@@ -440,7 +440,7 @@ export default function Camera() {
                   ✨ Auto-capture enabled
                 </p>
                 <p className="text-white/60 text-xs">
-                  {faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
+                  {faceDetected ? "Face detected - processing in a few seconds..." : "Looking for face..."}
                 </p>
               </div>
             )}
