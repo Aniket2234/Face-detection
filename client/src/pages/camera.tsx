@@ -287,25 +287,25 @@ export default function Camera() {
 
       {/* Registration Form Modal */}
       {mode === 'register' && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 p-6">
+        <div className="fixed bottom-32 left-0 right-0 z-20 p-6">
           <Card className="bg-black/60 border-white/20 backdrop-blur-sm" data-testid="registration-form">
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">Name</Label>
+                <Label htmlFor="name" className="text-white text-sm">Name</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-10"
                   data-testid="input-name"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-white">Role</Label>
+                <Label htmlFor="role" className="text-white text-sm">Role</Label>
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white" data-testid="select-role">
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white h-10" data-testid="select-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
