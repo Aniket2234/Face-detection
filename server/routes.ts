@@ -40,6 +40,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User with this name already exists" });
       }
 
+      // Check for duplicate face (same face with different name)
+      if (userData.faceDescriptor && Array.isArray(userData.faceDescriptor)) {
+        const allUsers = await getStorage().getAllUsers();
+        const threshold = 0.6; // Face similarity threshold
+        
+        for (const user of allUsers) {
+          if (!user.faceDescriptor || !Array.isArray(user.faceDescriptor)) continue;
+          
+          const distance = calculateEuclideanDistance(userData.faceDescriptor, user.faceDescriptor);
+          if (distance < threshold) {
+            return res.status(400).json({ 
+              message: "This face is already registered in the system",
+              existingUser: user.name 
+            });
+          }
+        }
+      }
+
       const user = await getStorage().createUser(userData);
       res.status(201).json(user);
     } catch (error) {

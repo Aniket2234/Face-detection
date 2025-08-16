@@ -57,6 +57,37 @@
   .safe-area-inset-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+  
+  /* Prevent text overlapping on small screens */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Ensure proper text wrapping */
+  .text-wrap {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Fix button text overlapping */
+  button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Improved mobile card spacing */
+  .mobile-card {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
 }
 
 /* Touch optimizations */

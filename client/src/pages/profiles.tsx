@@ -5,6 +5,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, CheckCircle } from 'lucide-react';
 import type { User } from '@shared/schema';
@@ -12,6 +14,9 @@ import type { User } from '@shared/schema';
 export default function Profiles() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editName, setEditName] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -45,6 +50,29 @@ export default function Profiles() {
     },
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<User> }) => {
+      const response = await apiRequest('PATCH', `/api/users/${userId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      toast({
+        title: "Profile Updated",
+        description: "User profile has been updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update user profile",
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredUsers = users.filter((user: User) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -57,6 +85,21 @@ export default function Profiles() {
     if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
       deleteUserMutation.mutate(userId);
     }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingUser || !editName.trim()) return;
+    
+    updateUserMutation.mutate({
+      userId: editingUser.id,
+      updates: { name: editName.trim() }
+    });
   };
 
   const formatLastSeen = (lastSeen: string | Date | null) => {
@@ -194,6 +237,7 @@ export default function Profiles() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => handleEditUser(user)}
                         className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-lg sm:rounded-xl hover:bg-slate-200 transition-colors duration-200 touch-manipulation"
                         data-testid={`button-edit-${user.id}`}
                       >
@@ -257,6 +301,43 @@ export default function Profiles() {
             Add New Profile
           </Button>
         </div>
+
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-sm mx-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter user name"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex space-x-2 pt-4">
+                <Button
+                  onClick={() => setIsEditDialogOpen(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={!editName.trim() || updateUserMutation.isPending}
+                  className="flex-1"
+                >
+                  {updateUserMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -80,8 +80,8 @@ export default function Dashboard() {
                     <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">Register Face</h3>
-                    <p className="text-sm sm:text-base text-slate-600">Add a new face to the system</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 text-wrap">Register Face</h3>
+                    <p className="text-sm sm:text-base text-slate-600 text-wrap leading-tight">Add a new face to the system</p>
                   </div>
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
                 </div>
@@ -103,8 +103,8 @@ export default function Dashboard() {
                     <Smile className="w-6 h-6 sm:w-8 sm:h-8 text-success" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">Authenticate</h3>
-                    <p className="text-sm sm:text-base text-slate-600">Verify your identity with face scan</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 text-wrap">Authenticate</h3>
+                    <p className="text-sm sm:text-base text-slate-600 text-wrap leading-tight">Verify your identity with face scan</p>
                   </div>
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
                 </div>
@@ -126,8 +126,8 @@ export default function Dashboard() {
                     <Users className="w-6 h-6 sm:w-8 sm:h-8 text-secondary" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">Manage Profiles</h3>
-                    <p className="text-sm sm:text-base text-slate-600">View and manage registered users</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 text-wrap">Manage Profiles</h3>
+                    <p className="text-sm sm:text-base text-slate-600 text-wrap leading-tight">View and manage registered users</p>
                   </div>
                   <div className="text-right mr-2 sm:mr-4 flex-shrink-0">
                     <span className="text-xl sm:text-2xl font-bold text-slate-900" data-testid="text-user-count">
