@@ -24,7 +24,6 @@ export default function Camera() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [autoCapture, setAutoCapture] = useState(true);
-  const [captureCountdown, setCaptureCountdown] = useState(0);
   const [alertState, setAlertState] = useState<{
     isOpen: boolean;
     type: "success" | "error" | "warning" | "info";
@@ -140,90 +139,34 @@ export default function Camera() {
     }
   }, [isStreaming, startDetection]);
 
-  // Auto-capture logic
+  // Auto-capture logic - simplified to capture immediately when conditions are met
   useEffect(() => {
-    if (!autoCapture || isProcessing || registerMutation.isPending || recognizeMutation.isPending) {
+    if (!autoCapture || isProcessing || registerMutation.isPending || recognizeMutation.isPending || captureConditionsMetRef.current) {
       return;
     }
 
-    const canCapture = faceDetected && faceDescriptor && confidence > 0.8;
+    const canCapture = faceDetected && faceDescriptor && confidence > 0.7;
     
     if (mode === 'register') {
-      // For registration, also check if name is entered
-      if (canCapture && name.trim()) {
-        if (!captureConditionsMetRef.current) {
-          captureConditionsMetRef.current = true;
-          setCaptureCountdown(3);
-          
-          // Start 3-second countdown
-          let count = 3;
-          const countdownInterval = setInterval(() => {
-            count--;
-            setCaptureCountdown(count);
-            
-            if (count === 0) {
-              clearInterval(countdownInterval);
-              setCaptureCountdown(0);
-              
-              // Final check before capture
-              if (faceDetected && faceDescriptor && name.trim()) {
-                handleCapture();
-              }
-              captureConditionsMetRef.current = false;
-            }
-          }, 1000);
-          
-          autoCaptureTimerRef.current = countdownInterval;
-        }
-      } else {
-        captureConditionsMetRef.current = false;
-        if (autoCaptureTimerRef.current) {
-          clearInterval(autoCaptureTimerRef.current);
-          setCaptureCountdown(0);
-        }
+      // For registration, check if name is entered and face is detected
+      if (canCapture && name.trim().length > 0) {
+        captureConditionsMetRef.current = true;
+        setTimeout(() => {
+          handleCapture();
+          captureConditionsMetRef.current = false;
+        }, 800); // Small delay to ensure stable detection
       }
     } else {
-      // For authentication, no name required
-      if (canCapture && isBlinking) {
-        if (!captureConditionsMetRef.current) {
-          captureConditionsMetRef.current = true;
-          setCaptureCountdown(2);
-          
-          // Start 2-second countdown for authentication
-          let count = 2;
-          const countdownInterval = setInterval(() => {
-            count--;
-            setCaptureCountdown(count);
-            
-            if (count === 0) {
-              clearInterval(countdownInterval);
-              setCaptureCountdown(0);
-              
-              // Final check before capture
-              if (faceDetected && faceDescriptor) {
-                handleCapture();
-              }
-              captureConditionsMetRef.current = false;
-            }
-          }, 1000);
-          
-          autoCaptureTimerRef.current = countdownInterval;
-        }
-      } else {
-        captureConditionsMetRef.current = false;
-        if (autoCaptureTimerRef.current) {
-          clearInterval(autoCaptureTimerRef.current);
-          setCaptureCountdown(0);
-        }
+      // For authentication, capture immediately when face is detected
+      if (canCapture) {
+        captureConditionsMetRef.current = true;
+        setTimeout(() => {
+          handleCapture();
+          captureConditionsMetRef.current = false;
+        }, 500); // Shorter delay for authentication
       }
     }
-
-    return () => {
-      if (autoCaptureTimerRef.current) {
-        clearInterval(autoCaptureTimerRef.current);
-      }
-    };
-  }, [faceDetected, faceDescriptor, confidence, isBlinking, name, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending]);
+  }, [faceDetected, faceDescriptor, confidence, name, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending]);
 
   const handleCapture = async () => {
     if (!faceDetected || !faceDescriptor) {
@@ -354,60 +297,50 @@ export default function Camera() {
           
           {/* Face detection indicator */}
           <div className="absolute -top-4 sm:-top-8 left-1/2 transform -translate-x-1/2">
-            {captureCountdown > 0 ? (
-              <div className="px-4 py-2 rounded-full text-lg font-bold bg-primary text-white animate-pulse">
-                {captureCountdown}
-              </div>
-            ) : (
-              <div className={`px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium animate-face-scan ${
-                faceDetected ? 'bg-success text-white' : 'bg-yellow-500 text-white'
-              }`} data-testid="detection-status">
-                {faceDetected ? (
-                  <>
-                    <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Face Detected</span>
-                    <span className="sm:hidden">Found</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="hidden sm:inline">Looking for face...</span>
-                    <span className="sm:hidden">Scanning...</span>
-                  </>
-                )}
-              </div>
-            )}
+            <div className={`px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium animate-face-scan ${
+              faceDetected ? 'bg-success text-white' : 'bg-yellow-500 text-white'
+            }`} data-testid="detection-status">
+              {faceDetected ? (
+                <>
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Face Detected</span>
+                  <span className="sm:hidden">Found</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Looking for face...</span>
+                  <span className="sm:hidden">Scanning...</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Instructions */}
         <div className="text-center space-y-2 sm:space-y-4">
-          {captureCountdown > 0 ? (
-            <div className="space-y-2">
-              <h2 className="text-lg sm:text-2xl font-bold text-white animate-pulse">
-                Auto Capturing in {captureCountdown}...
-              </h2>
-              <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4">
-                Hold still and keep looking at the camera
-              </p>
-            </div>
-          ) : (
-            <div>
-              <h2 className="text-lg sm:text-2xl font-bold text-white" data-testid="instruction-title">
-                Position Your Face
-              </h2>
-              <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
-                {mode === 'register' 
-                  ? "Enter your name and position your face in the circle"
-                  : "Look directly at the camera and blink naturally"
-                }
-              </p>
-              {autoCapture && (
-                <p className="text-green-400 text-sm mt-2">
-                  ✨ Auto-capture enabled - No need to click!
+          <div>
+            <h2 className="text-lg sm:text-2xl font-bold text-white" data-testid="instruction-title">
+              {isProcessing ? "Processing..." : "Position Your Face"}
+            </h2>
+            <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
+              {isProcessing ? "Please wait while we process your face" : 
+               mode === 'register' 
+                ? "Enter your name and look at the camera" 
+                : "Look directly at the camera"
+              }
+            </p>
+            {autoCapture && !isProcessing && (
+              <div className="mt-2">
+                <p className="text-green-400 text-sm">
+                  ✨ Auto-capture enabled
                 </p>
-              )}
-            </div>
-          )}
+                <p className="text-white/60 text-xs">
+                  {mode === 'register' && !name.trim() ? "Enter your name to start" : 
+                   faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
+                </p>
+              </div>
+            )}
+          </div>
           
           {/* Liveness Detection Instructions */}
           <Card className="bg-black/40 border-white/20 backdrop-blur-sm max-w-xs sm:max-w-sm mx-auto" data-testid="liveness-card">
