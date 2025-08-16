@@ -20,10 +20,15 @@ export default function Camera() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [name, setName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [autoCapture, setAutoCapture] = useState(true);
+  const [capturedFaceData, setCapturedFaceData] = useState<{
+    faceDescriptor: number[];
+    profileImage: string;
+  } | null>(null);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [name, setName] = useState('');
   const [alertState, setAlertState] = useState<{
     isOpen: boolean;
     type: "success" | "error" | "warning" | "info";
@@ -53,6 +58,37 @@ export default function Camera() {
     startDetection,
     stopDetection,
   } = useFaceDetection();
+
+  // Check if face is already registered
+  const checkFaceMutation = useMutation({
+    mutationFn: async (faceDescriptor: number[]) => {
+      const response = await apiRequest('POST', '/api/recognize', { faceDescriptor });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.user) {
+        // Face already registered
+        setAlertState({
+          isOpen: true,
+          type: "error",
+          title: "Face Already Registered",
+          message: `This face is already registered under the name "${data.user.name}"`
+        });
+        setCapturedFaceData(null);
+      } else {
+        // Face not registered, proceed to name input
+        setShowNameInput(true);
+      }
+    },
+    onError: () => {
+      setAlertState({
+        isOpen: true,
+        type: "error",
+        title: "Check Failed",
+        message: "Failed to verify face registration status"
+      });
+    },
+  });
 
   const registerMutation = useMutation({
     mutationFn: async (userData: { name: string; faceDescriptor: number[]; profileImage: string }) => {
@@ -89,6 +125,10 @@ export default function Camera() {
         title,
         message
       });
+      
+      // Reset to allow trying again
+      setShowNameInput(false);
+      setCapturedFaceData(null);
     },
   });
 
@@ -141,15 +181,15 @@ export default function Camera() {
 
   // Auto-capture logic - simplified to capture immediately when conditions are met
   useEffect(() => {
-    if (!autoCapture || isProcessing || registerMutation.isPending || recognizeMutation.isPending || captureConditionsMetRef.current) {
+    if (!autoCapture || isProcessing || registerMutation.isPending || recognizeMutation.isPending || captureConditionsMetRef.current || showNameInput) {
       return;
     }
 
     const canCapture = faceDetected && faceDescriptor && confidence > 0.7;
     
     if (mode === 'register') {
-      // For registration, check if name is entered and face is detected
-      if (canCapture && name.trim().length > 0) {
+      // For registration, capture immediately when face is detected (no name required yet)
+      if (canCapture && !capturedFaceData) {
         captureConditionsMetRef.current = true;
         setTimeout(() => {
           handleCapture();
@@ -166,7 +206,7 @@ export default function Camera() {
         }, 500); // Shorter delay for authentication
       }
     }
-  }, [faceDetected, faceDescriptor, confidence, name, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending]);
+  }, [faceDetected, faceDescriptor, confidence, mode, autoCapture, isProcessing, registerMutation.isPending, recognizeMutation.isPending, showNameInput, capturedFaceData]);
 
   const handleCapture = async () => {
     if (!faceDetected || !faceDescriptor) {
@@ -180,41 +220,71 @@ export default function Camera() {
     }
 
     if (mode === 'register') {
-      if (!name.trim()) {
-        setAlertState({
-          isOpen: true,
-          type: "warning",
-          title: "Name Required",
-          message: "Please enter your name to register"
+      if (showNameInput) {
+        // Handle final registration with captured face data and entered name
+        if (!name.trim()) {
+          setAlertState({
+            isOpen: true,
+            type: "warning",
+            title: "Name Required",
+            message: "Please enter your name to complete registration"
+          });
+          return;
+        }
+
+        if (!capturedFaceData) {
+          setAlertState({
+            isOpen: true,
+            type: "error",
+            title: "Face Data Missing",
+            message: "Please capture your face again"
+          });
+          setShowNameInput(false);
+          return;
+        }
+
+        setIsProcessing(true);
+        setProgress(75);
+        
+        registerMutation.mutate({
+          name: name.trim(),
+          faceDescriptor: capturedFaceData.faceDescriptor,
+          profileImage: capturedFaceData.profileImage,
         });
-        return;
-      }
 
-      setIsProcessing(true);
-      setProgress(25);
+        setProgress(100);
+        setTimeout(() => setIsProcessing(false), 500);
+      } else {
+        // Initial face capture for registration
+        setIsProcessing(true);
+        setProgress(25);
 
-      const profileImage = captureImage();
-      if (!profileImage) {
-        setAlertState({
-          isOpen: true,
-          type: "error",
-          title: "Capture Failed",
-          message: "Failed to capture profile image"
+        const profileImage = captureImage();
+        if (!profileImage) {
+          setAlertState({
+            isOpen: true,
+            type: "error",
+            title: "Capture Failed",
+            message: "Failed to capture profile image"
+          });
+          setIsProcessing(false);
+          return;
+        }
+
+        setProgress(50);
+        
+        // Store captured face data
+        setCapturedFaceData({
+          faceDescriptor,
+          profileImage
         });
-        setIsProcessing(false);
-        return;
+
+        // Check if face is already registered
+        checkFaceMutation.mutate(faceDescriptor);
+        
+        setProgress(100);
+        setTimeout(() => setIsProcessing(false), 500);
       }
-
-      setProgress(75);
-      
-      registerMutation.mutate({
-        name: name.trim(),
-        faceDescriptor,
-        profileImage,
-      });
-
-      setProgress(100);
-      setTimeout(() => setIsProcessing(false), 500);
     } else {
       // Authentication mode
       setIsProcessing(true);
@@ -234,24 +304,26 @@ export default function Camera() {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden flex flex-col">
       
-      {/* Camera Feed Background */}
-      <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-          data-testid="camera-video"
-        />
-        <FaceDetector
-          isDetecting={isDetecting}
-          faceDetected={faceDetected}
-          confidence={confidence}
-          isBlinking={isBlinking}
-          className="absolute inset-0"
-        />
-      </div>
+      {/* Camera Feed Background - Hidden during name input */}
+      {!(mode === 'register' && showNameInput) && (
+        <div className="absolute inset-0">
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            data-testid="camera-video"
+          />
+          <FaceDetector
+            isDetecting={isDetecting}
+            faceDetected={faceDetected}
+            confidence={confidence}
+            isBlinking={isBlinking}
+            className="absolute inset-0"
+          />
+        </div>
+      )}
       
       {/* Top Bar */}
       <div className="relative z-10 flex items-center justify-between p-3 sm:p-6 bg-black/30 backdrop-blur-sm safe-area-inset-top">
@@ -279,8 +351,9 @@ export default function Camera() {
         </Button>
       </div>
 
-      {/* Face Detection Overlay */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+      {/* Face Detection Overlay - Hidden during name input */}
+      {!(mode === 'register' && showNameInput) && (
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         
         {/* Detection Circle */}
         <div className="relative mb-4 sm:mb-8">
@@ -325,18 +398,27 @@ export default function Camera() {
             <p className="text-white/80 max-w-xs sm:max-w-sm text-xs sm:text-base px-4" data-testid="instruction-text">
               {isProcessing ? "Please wait while we process your face" : 
                mode === 'register' 
-                ? "Enter your name and look at the camera" 
+                ? "Look at the camera to capture your face" 
                 : "Look directly at the camera"
               }
             </p>
-            {autoCapture && !isProcessing && (
+            {autoCapture && !isProcessing && mode === 'register' && !showNameInput && (
               <div className="mt-2">
                 <p className="text-green-400 text-sm">
                   ✨ Auto-capture enabled
                 </p>
                 <p className="text-white/60 text-xs">
-                  {mode === 'register' && !name.trim() ? "Enter your name to start" : 
-                   faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
+                  {faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
+                </p>
+              </div>
+            )}
+            {autoCapture && !isProcessing && mode === 'verify' && (
+              <div className="mt-2">
+                <p className="text-green-400 text-sm">
+                  ✨ Auto-capture enabled
+                </p>
+                <p className="text-white/60 text-xs">
+                  {faceDetected ? "Face detected - capturing soon!" : "Looking for face..."}
                 </p>
               </div>
             )}
@@ -365,32 +447,64 @@ export default function Camera() {
             </CardContent>
           </Card>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* Registration Form Modal */}
-      {mode === 'register' && (
-        <div className="fixed bottom-16 sm:bottom-32 left-3 right-3 sm:left-6 sm:right-6 z-20">
-          <Card className="bg-black/60 border-white/20 backdrop-blur-sm" data-testid="registration-form">
-            <CardContent className="p-3 sm:p-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-white text-xs sm:text-sm font-medium">Full Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-10 sm:h-12 text-sm sm:text-base rounded-lg sm:rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
-                  data-testid="input-name"
-                />
-                <p className="text-white/60 text-xs">This name will be used for face recognition</p>
+      {/* Name Input Screen - Shows after successful face capture for registration */}
+      {mode === 'register' && showNameInput && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-black/80 border-white/20 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="text-center mb-6">
+                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Face Captured!</h2>
+                <p className="text-white/80 text-sm">Your face has been successfully captured. Now enter your name to complete registration.</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name" className="text-white text-sm font-medium">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 h-12 text-base rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    data-testid="input-name"
+                    autoFocus
+                  />
+                  <p className="text-white/60 text-xs mt-1">This name will be used for face recognition</p>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={() => {
+                      setShowNameInput(false);
+                      setCapturedFaceData(null);
+                      setName('');
+                    }}
+                    variant="outline"
+                    className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    Retake Photo
+                  </Button>
+                  <Button
+                    onClick={handleCapture}
+                    disabled={!name.trim() || registerMutation.isPending}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    {registerMutation.isPending ? "Registering..." : "Complete Registration"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Bottom Controls */}
-      <div className="relative z-10 p-3 sm:p-6 bg-black/30 backdrop-blur-sm safe-area-inset-bottom">
+      {/* Bottom Controls - Hidden during name input */}
+      {!(mode === 'register' && showNameInput) && (
+        <div className="relative z-10 p-3 sm:p-6 bg-black/30 backdrop-blur-sm safe-area-inset-bottom">
         <div className="flex items-center justify-center space-x-4 sm:space-x-8">
           <Button
             variant="ghost"
@@ -448,7 +562,8 @@ export default function Camera() {
             </p>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {(cameraError || detectionError) && (
