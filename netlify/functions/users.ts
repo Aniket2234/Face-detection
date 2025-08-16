@@ -27,6 +27,23 @@ function calculateEuclideanDistance(desc1: number[], desc2: number[]): number {
   return Math.sqrt(sum)
 }
 
+function calculateCosineSimilarity(desc1: number[], desc2: number[]): number {
+  if (desc1.length !== desc2.length) return 0
+  
+  let dotProduct = 0
+  let magnitude1 = 0
+  let magnitude2 = 0
+  
+  for (let i = 0; i < desc1.length; i++) {
+    dotProduct += desc1[i] * desc2[i]
+    magnitude1 += desc1[i] * desc1[i]
+    magnitude2 += desc2[i] * desc2[i]
+  }
+  
+  const magnitude = Math.sqrt(magnitude1) * Math.sqrt(magnitude2)
+  return magnitude === 0 ? 0 : dotProduct / magnitude
+}
+
 export const handler: Handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -68,15 +85,20 @@ export const handler: Handler = async (event, context) => {
               body: JSON.stringify({ message: "User not found" })
             }
           }
+          // Remove sensitive face descriptor from response
           return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ ...user, id: user._id.toString() })
+            body: JSON.stringify({ ...user, id: user._id.toString(), faceDescriptor: undefined })
           }
         } else {
-          // Get all users
+          // Get all users without face descriptors for privacy
           const users = await usersCollection.find({}).toArray()
-          const formattedUsers = users.map(user => ({ ...user, id: user._id.toString() }))
+          const formattedUsers = users.map(user => ({ 
+            ...user, 
+            id: user._id.toString(),
+            faceDescriptor: undefined  // Remove for privacy and performance
+          }))
           return {
             statusCode: 200,
             headers,
@@ -104,22 +126,27 @@ export const handler: Handler = async (event, context) => {
           }
         }
 
-        // Check for duplicate face
+        // Check for duplicate face with improved accuracy
         if (userData.faceDescriptor && Array.isArray(userData.faceDescriptor)) {
           const allUsers = await usersCollection.find({}).toArray()
-          const threshold = 0.6
+          const euclideanThreshold = 0.4  // Stricter threshold for registration
+          const similarityThreshold = 0.85  // High similarity threshold
           
           for (const user of allUsers) {
             if (!user.faceDescriptor || !Array.isArray(user.faceDescriptor)) continue
             
             const distance = calculateEuclideanDistance(userData.faceDescriptor, user.faceDescriptor)
-            if (distance < threshold) {
+            const similarity = calculateCosineSimilarity(userData.faceDescriptor, user.faceDescriptor)
+            
+            // Use both metrics for duplicate detection
+            if (distance < euclideanThreshold && similarity > similarityThreshold) {
               return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({
                   message: "This face is already registered in the system",
-                  existingUser: user.name
+                  existingUser: user.name,
+                  similarity: Number((similarity * 100).toFixed(1))
                 })
               }
             }

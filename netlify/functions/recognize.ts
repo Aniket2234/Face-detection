@@ -25,6 +25,23 @@ function calculateEuclideanDistance(desc1: number[], desc2: number[]): number {
   return Math.sqrt(sum)
 }
 
+function calculateCosineSimilarity(desc1: number[], desc2: number[]): number {
+  if (desc1.length !== desc2.length) return 0
+  
+  let dotProduct = 0
+  let magnitude1 = 0
+  let magnitude2 = 0
+  
+  for (let i = 0; i < desc1.length; i++) {
+    dotProduct += desc1[i] * desc2[i]
+    magnitude1 += desc1[i] * desc1[i]
+    magnitude2 += desc2[i] * desc2[i]
+  }
+  
+  const magnitude = Math.sqrt(magnitude1) * Math.sqrt(magnitude2)
+  return magnitude === 0 ? 0 : dotProduct / magnitude
+}
+
 export const handler: Handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -62,31 +79,50 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
+    // Add request ID for better tracking
+    const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2)
+    
     const users = await usersCollection.find({}).toArray()
     let bestMatch: WithId<Document> | null = null
     let bestDistance = Infinity
-    const threshold = 0.6
+    let bestSimilarity = -1
+    
+    // More strict thresholds for better accuracy
+    const euclideanThreshold = 0.5  // Lower threshold for stricter matching
+    const cosineSimilarityThreshold = 0.8  // High similarity threshold
 
-    // Find best matching face
+    // Find best matching face using both distance and similarity
     for (const user of users) {
       if (!user.faceDescriptor || !Array.isArray(user.faceDescriptor)) continue
       
       const distance = calculateEuclideanDistance(faceDescriptor, user.faceDescriptor)
-      if (distance < bestDistance && distance < threshold) {
-        bestDistance = distance
-        bestMatch = user
+      const similarity = calculateCosineSimilarity(faceDescriptor, user.faceDescriptor)
+      
+      // Use both metrics for better accuracy
+      if (distance < euclideanThreshold && similarity > cosineSimilarityThreshold) {
+        if (distance < bestDistance) {
+          bestDistance = distance
+          bestSimilarity = similarity
+          bestMatch = user
+        }
       }
     }
 
-    const confidence = bestMatch ? Math.max(0, (1 - bestDistance) * 100) : 0
+    // More conservative confidence calculation
+    const confidence = bestMatch ? 
+      Math.min(95, Math.max(0, (bestSimilarity * 100 + (1 - bestDistance) * 50) / 1.5)) : 0
     const success = bestMatch !== null
 
-    // Log recognition attempt
+    // Log recognition attempt with request tracking
     const logEntry = {
       userId: bestMatch ? bestMatch._id.toString() : null,
       confidence,
       success,
-      timestamp: new Date()
+      timestamp: new Date(),
+      requestId,
+      euclideanDistance: bestMatch ? bestDistance : null,
+      cosineSimilarity: bestMatch ? bestSimilarity : null,
+      userAgent: event.headers['user-agent'] || 'unknown'
     }
     await logsCollection.insertOne(logEntry)
 
@@ -103,8 +139,15 @@ export const handler: Handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success,
-        user: bestMatch ? { ...bestMatch, id: bestMatch._id.toString() } : null,
-        confidence: Number(confidence.toFixed(1))
+        user: bestMatch ? { 
+          ...bestMatch, 
+          id: bestMatch._id.toString(),
+          // Remove sensitive face descriptor from response
+          faceDescriptor: undefined 
+        } : null,
+        confidence: Number(confidence.toFixed(1)),
+        requestId,
+        timestamp: new Date().toISOString()
       })
     }
   } catch (error: any) {

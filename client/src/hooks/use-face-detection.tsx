@@ -24,6 +24,9 @@ export function useFaceDetection(): FaceDetectionHook {
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastEyeStateRef = useRef<boolean>(true); // true = eyes open
+  const sessionId = useRef<string>(Date.now().toString(36) + Math.random().toString(36).substr(2));
+  const lastDetectionTime = useRef<number>(0);
+  const stableFaceCount = useRef<number>(0);
 
   const detectBlink = useCallback((landmarks: faceapi.FaceLandmarks68): boolean => {
     // Calculate eye aspect ratio for blink detection
@@ -66,23 +69,35 @@ export function useFaceDetection(): FaceDetectionHook {
     if (!videoRef.current) return;
 
     try {
+      // Throttle detection to avoid overwhelming the system
+      const now = Date.now();
+      if (now - lastDetectionTime.current < 200) return; // Minimum 200ms between detections
+      lastDetectionTime.current = now;
+      
       const detection = await detectFace(videoRef.current);
       
       if (detection) {
-        setFaceDetected(true);
-        setConfidence(detection.detection.score);
-        setFaceDescriptor(getFaceDescriptor(detection));
+        // Require multiple stable detections for better accuracy
+        stableFaceCount.current += 1;
         
-        // Check for blink
-        const blinked = detectBlink(detection.landmarks);
-        if (blinked) {
-          setIsBlinking(true);
-          setTimeout(() => setIsBlinking(false), 500);
+        if (stableFaceCount.current >= 3) { // Need 3 stable detections
+          setFaceDetected(true);
+          setConfidence(detection.detection.score);
+          setFaceDescriptor(getFaceDescriptor(detection));
+          
+          // Check for blink
+          const blinked = detectBlink(detection.landmarks);
+          if (blinked) {
+            setIsBlinking(true);
+            setTimeout(() => setIsBlinking(false), 500);
+          }
         }
+        setError(null);
       } else {
+        stableFaceCount.current = 0;
         setFaceDetected(false);
-        setConfidence(0);
         setFaceDescriptor(null);
+        setConfidence(0);
       }
     } catch (err) {
       console.error('Face detection error:', err);
@@ -90,27 +105,23 @@ export function useFaceDetection(): FaceDetectionHook {
     }
   }, [detectBlink]);
 
-  const startDetection = useCallback(async (video: HTMLVideoElement) => {
-    try {
-      setError(null);
-      await initializeFaceAPI();
-      
-      videoRef.current = video;
-      setIsDetecting(true);
-      
-      // Run detection every 200ms
-      detectionIntervalRef.current = setInterval(runDetection, 200);
-    } catch (err) {
-      setError('Failed to initialize face detection');
-      console.error('Face detection initialization failed:', err);
-    }
-  }, [runDetection]);
+  const startDetection = useCallback((video: HTMLVideoElement) => {
+    if (isDetecting) return;
+    
+    videoRef.current = video;
+    setIsDetecting(true);
+    setError(null);
+    
+    // Start detection loop with improved timing
+    detectionIntervalRef.current = setInterval(runDetection, 150); // Slightly slower for stability
+  }, [isDetecting, runDetection]);
 
   const stopDetection = useCallback(() => {
     setIsDetecting(false);
     setFaceDetected(false);
     setFaceDescriptor(null);
     setConfidence(0);
+    stableFaceCount.current = 0;
     videoRef.current = null;
     
     if (detectionIntervalRef.current) {
@@ -119,11 +130,26 @@ export function useFaceDetection(): FaceDetectionHook {
     }
   }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopDetection();
     };
   }, [stopDetection]);
+
+  // Initialize Face API
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initializeFaceAPI();
+      } catch (err) {
+        console.error('Face API initialization error:', err);
+        setError('Failed to initialize face detection');
+      }
+    };
+    
+    init();
+  }, []);
 
   return {
     isDetecting,
