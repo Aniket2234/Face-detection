@@ -28,7 +28,7 @@ export default function Welcome() {
       setUser({
         id: 'demo-user',
         name: 'Demo User',
-        profileImage: null,
+        profileImage: undefined,
         lastLogin: new Date().toISOString()
       });
     }
