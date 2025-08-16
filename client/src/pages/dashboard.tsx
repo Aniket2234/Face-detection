@@ -2,7 +2,7 @@ import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Smile, Users, CheckCircle, ChevronRight, Activity, Shield, TrendingUp } from 'lucide-react';
+import { UserPlus, Smile, Users, CheckCircle, ChevronRight, Activity, Shield, TrendingUp, ArrowLeft } from 'lucide-react';
 import type { User } from '@shared/schema';
 
 export default function Dashboard() {
@@ -30,7 +30,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 relative">
+      {/* Back Button */}
+      <Button
+        onClick={() => setLocation('/welcome')}
+        variant="ghost"
+        size="sm"
+        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground z-10"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Welcome
+      </Button>
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* Header */}
